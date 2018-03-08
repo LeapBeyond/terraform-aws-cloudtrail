@@ -51,3 +51,15 @@ There is value in periodically testing the validity of the logs, and this could 
 ```
 aws --profile adm_rhook_cli --region eu-west-2 cloudtrail validate-logs --trail-arn arn:aws:cloudtrail:eu-west-2:889199313043:trail/example-trail --start-time 2015-03-6T00:00:00Z
 ```
+
+which would give a report similar to:
+
+```
+Validating log files for trail arn:aws:cloudtrail:eu-west-2:889199313043:trail/example-trail between 2015-03-06T00:00:00Z and 2018-03-08T19:34:33Z
+
+Results requested for 2015-03-06T00:00:00Z to 2018-03-08T19:34:33Z
+Results found for 2018-03-05T12:50:37Z to 2018-03-08T18:50:37Z:
+
+78/78 digest files valid
+691/691 log files valid
+```
