@@ -1,0 +1,6 @@
+aws_region="eu-west-2"
+aws_profile="????"
+aws_account_id="????"
+ssh_inbound = ["?.?.?.0/24", "?.?.?.0/24"]
+example_key = "logging_test"
+log_reader = "RobertHook"
