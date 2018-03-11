@@ -7,3 +7,4 @@ env.rc
 *.pem
 *key
 *.pub
+*.zip

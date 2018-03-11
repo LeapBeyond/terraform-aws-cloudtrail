@@ -59,7 +59,25 @@ resource "aws_kms_key" "cloudtrail_key" {
     },
 
     {
-      "Sid": "Enable CloudTrail log decrypt permissions",
+      "Sid": "Allow Lambda function to encrypt logs",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:sts::${var.aws_account_id}:assumed-role/${aws_iam_role.flow_lambda_example.name}/${var.lambda_function_name}"
+      },
+      "Action": [
+        "kms:GenerateDataKey*",
+        "kms:Encrypt*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:EncryptionContext:aws:lambda:FunctionArn": "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:function:flow-export-example"
+        }
+      }
+    },
+
+    {
+      "Sid": "Enable log decrypt permissions",
       "Effect": "Allow",
       "Principal": {
         "AWS": [
@@ -81,28 +99,12 @@ resource "aws_kms_key" "cloudtrail_key" {
     },
 
     {
-      "Sid": "Allow CloudTrail access",
+      "Sid": "Allow Describe Key access",
       "Effect": "Allow",
       "Principal": {
-        "Service": "cloudtrail.amazonaws.com"
+        "Service": ["cloudtrail.amazonaws.com", "lambda.amazonaws.com"]
       },
       "Action": "kms:DescribeKey",
-      "Resource": "*"
-    },
-
-    {
-      "Sid": "Allow CloudWatch Access",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "logs.${var.aws_region}.amazonaws.com"
-      },
-      "Action": [
-        "kms:Encrypt*",
-        "kms:Decrypt*",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:Describe*"
-      ],
       "Resource": "*"
     }
   ]
@@ -165,35 +167,43 @@ resource "aws_s3_bucket_policy" "log_bucket_policy" {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AWSCloudTrailAclCheck",
+      "Sid": "Allow bucket ACL check",
       "Effect": "Allow",
-      "Principal": {"Service": "cloudtrail.amazonaws.com"},
+      "Principal": {
+        "Service": [
+          "cloudtrail.amazonaws.com",
+          "logs.${var.aws_region}.amazonaws.com",
+          "lambda.amazonaws.com"
+          ]
+        },
       "Action": "s3:GetBucketAcl",
       "Resource": "${aws_s3_bucket.log_bucket.arn}"
     },
     {
-      "Sid": "AWSCloudTrailWrite",
+      "Sid": "Allow bucket write",
       "Effect": "Allow",
-      "Principal": {"Service": "cloudtrail.amazonaws.com"},
+      "Principal": {
+        "Service": [
+          "cloudtrail.amazonaws.com",
+          "logs.${var.aws_region}.amazonaws.com"
+        ]
+      },
       "Action": "s3:PutObject",
       "Resource": "${aws_s3_bucket.log_bucket.arn}/*",
       "Condition": {"StringEquals": {"s3:x-amz-acl": "bucket-owner-full-control"}}
     },
     {
-      "Sid": "AWSCloudWatchAclCheck",
+      "Sid": "Allow bucket write for lambda",
       "Effect": "Allow",
-      "Principal": {"Service": "logs.${var.aws_region}.amazonaws.com"},
-      "Action": "s3:GetBucketAcl",
-      "Resource": "${aws_s3_bucket.log_bucket.arn}"
-    },
-    {
-      "Sid": "AWSCloudWatchWrite",
-      "Effect": "Allow",
-      "Principal": {"Service": "logs.${var.aws_region}.amazonaws.com"},
+      "Principal": {
+        "Service": [
+          "lambda.amazonaws.com"
+        ]
+      },
       "Action": "s3:PutObject",
-      "Resource": "${aws_s3_bucket.log_bucket.arn}/*",
-      "Condition": {"StringEquals": {"s3:x-amz-acl": "bucket-owner-full-control"}}
+      "Resource": "${aws_s3_bucket.log_bucket.arn}/*"
     }
+
   ]
 }
 POLICY
@@ -272,6 +282,7 @@ resource "aws_iam_role_policy" "flow_example" {
   "Statement": [
     {
       "Action": [
+        "iam:PassRole",
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents",
@@ -284,4 +295,76 @@ resource "aws_iam_role_policy" "flow_example" {
   ]
 }
 EOF
+}
+
+# -----------------------------------------------------------
+# Lambda pieces to pick up logs from cloudwatch, and put them in S3
+# -----------------------------------------------------------
+resource "null_resource" "lambda_zip" {
+  provisioner "local-exec" {
+    command = "zip -q FlowLogsToS3.zip FlowLogsToS3.py"
+  }
+}
+
+resource "aws_iam_role" "flow_lambda_example" {
+  name = "flow-lambda-example"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "flow_lambda_example" {
+  role       = "${aws_iam_role.flow_lambda_example.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
+}
+
+resource "aws_lambda_function" "example" {
+  depends_on = ["null_resource.lambda_zip"]
+
+  filename         = "FlowLogsToS3.zip"
+  function_name    = "${var.lambda_function_name}"
+  role             = "${aws_iam_role.flow_lambda_example.arn}"
+  handler          = "FlowLogsToS3.lambda_handler"
+  source_code_hash = "${base64sha256(file("FlowLogsToS3.zip"))}"
+  runtime          = "python2.7"
+  timeout          = "3"
+  memory_size      = "128"
+
+  environment {
+    variables = {
+      bucketS3 = "${aws_s3_bucket.log_bucket.id}"
+      folderS3 = "FlowLogs"
+      prefixS3 = "flowLog_"
+    }
+  }
+
+  tags = "${merge(map("Name","Example-FlowLogs-To-S3"), var.tags)}"
+}
+
+resource "aws_lambda_permission" "example" {
+  statement_id  = "flow-example"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.example.arn}"
+  principal     = "logs.${var.aws_region}.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_log_group.example.arn}"
+}
+
+resource "aws_cloudwatch_log_subscription_filter" "example" {
+  depends_on      = ["aws_lambda_permission.example"]
+  name            = "Lambda-FlowLogs-To-S3"
+  log_group_name  = "${aws_cloudwatch_log_group.example.name}"
+  filter_pattern  = "[version, account_id, interface_id, srcaddr != \"-\", dstaddr != \"-\", srcport != \"-\", dstport != \"-\", protocol, packets, bytes, start, end, action, log_status]"
+  destination_arn = "${aws_lambda_function.example.arn}"
 }

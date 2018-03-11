@@ -38,6 +38,10 @@ variable "example_user" {
   default = "ec2-user"
 }
 
+variable "lambda_function_name" {
+  default = "flow-export-example"
+}
+
 variable "aws_account_id" {}
 variable "aws_profile" {}
 variable "aws_region" {}
