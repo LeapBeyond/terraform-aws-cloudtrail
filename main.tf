@@ -99,6 +99,22 @@ resource "aws_kms_key" "cloudtrail_key" {
     },
 
     {
+      "Sid": "Allow CloudWatch Access",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "logs.${var.aws_region}.amazonaws.com"
+      },
+      "Action": [
+        "kms:Encrypt*",
+        "kms:Decrypt*",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:Describe*"
+      ],
+      "Resource": "*"
+    },
+
+    {
       "Sid": "Allow Describe Key access",
       "Effect": "Allow",
       "Principal": {
@@ -282,7 +298,6 @@ resource "aws_iam_role_policy" "flow_example" {
   "Statement": [
     {
       "Action": [
-        "iam:PassRole",
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents",
