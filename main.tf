@@ -226,7 +226,7 @@ POLICY
 }
 
 # -----------------------------------------------------------
-# set up log group
+# set up log groups
 # -----------------------------------------------------------
 resource "aws_cloudwatch_log_group" "example" {
   name = "example"
@@ -236,9 +236,65 @@ resource "aws_cloudwatch_log_group" "example" {
   tags              = "${merge(map("Name","Example"), var.tags)}"
 }
 
+resource "aws_cloudwatch_log_group" "cloudtrail" {
+  name = "cloudtrail"
+
+  kms_key_id        = "${aws_kms_key.cloudtrail_key.arn}"
+  retention_in_days = 30
+  tags              = "${merge(map("Name","Cloudtrail"), var.tags)}"
+}
+
 # -----------------------------------------------------------
 # set up cloud trail
 # -----------------------------------------------------------
+resource "aws_iam_role" "cloudtrail_example" {
+  name = "cloudtrail-to-cloudwatch"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudtrail.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "cloudtrail_example" {
+  name = "cloudtrail-example"
+  role = "${aws_iam_role.cloudtrail_example.id}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AWSCloudTrailCreateLogStream",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogStream"],
+      "Resource": [
+        "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:${aws_cloudwatch_log_group.cloudtrail.id}:log-stream:${var.aws_account_id}_CloudTrail_${var.aws_region}*"
+      ]
+    },
+    {
+      "Sid": "AWSCloudTrailPutLogEvents",
+      "Effect": "Allow",
+      "Action": ["logs:PutLogEvents"],
+      "Resource": [
+        "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:${aws_cloudwatch_log_group.cloudtrail.id}:log-stream:${var.aws_account_id}_CloudTrail_${var.aws_region}*"
+      ]
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_cloudtrail" "example" {
   name                          = "${var.trail_name}"
   s3_bucket_name                = "${aws_s3_bucket.log_bucket.id}"
@@ -247,9 +303,9 @@ resource "aws_cloudtrail" "example" {
   enable_logging                = true
   is_multi_region_trail         = false
   enable_log_file_validation    = true
-  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.example.arn}"
-
-  kms_key_id = "${aws_kms_key.cloudtrail_key.arn}"
+  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail.arn}"
+  cloud_watch_logs_role_arn     = "${aws_iam_role.cloudtrail_example.arn}"
+  kms_key_id                    = "${aws_kms_key.cloudtrail_key.arn}"
 
   event_selector {
     read_write_type           = "All"
