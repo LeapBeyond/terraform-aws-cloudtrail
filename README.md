@@ -42,9 +42,7 @@ to a particular IAM user. There are complexities around privileges for reading t
 as it will depend exactly on what you want to do with them.
 
 ## CloudTrail Validation
-Fortunately the AWS CLI tool for testing the validity of the logs does not need to decrypt the logs (although it does require permissions to describe the CloudTrail trail,
-  and to use the S3 bucket). Please see https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-cli.html for more information on this
-  tool.
+Fortunately the AWS CLI tool for testing the validity of the logs does not need to decrypt the logs (although it does require permissions to describe the CloudTrail trail, and to use the S3 bucket). Please see https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-cli.html for more information on this tool.
 
 There is value in periodically testing the validity of the logs, and this could easily be automated by using an invocation similar to:
 
@@ -63,6 +61,10 @@ Results found for 2018-03-05T12:50:37Z to 2018-03-08T18:50:37Z:
 78/78 digest files valid
 691/691 log files valid
 ```
+
+## CloudWatch Alerts
+A handful of examples of using the CloudTrail logs to drive CloudWatch alerts can be found in the `cloudtrail.tf` file. These are all actions
+which are of particular security interest, and are shown in this example as using [SNS](https://aws.amazon.com/sns/) to send messages to [SQS](https://aws.amazon.com/sqs/) for some arbitrary downstream consumer. Please note that the security around SNS and SQS in this example is only sketched out, as it's not the focus of this example.
 
 ## License
 Copyright 2018 Leap Beyond Analytics

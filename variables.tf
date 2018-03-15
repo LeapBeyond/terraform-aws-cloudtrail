@@ -42,6 +42,10 @@ variable "lambda_function_name" {
   default = "flow-export-example"
 }
 
+variable "metric_name_space" {
+  default = "CloudTrailMetrics"
+}
+
 variable "aws_account_id" {}
 variable "aws_profile" {}
 variable "aws_region" {}
