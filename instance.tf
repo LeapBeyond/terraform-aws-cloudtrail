@@ -7,12 +7,12 @@ resource "aws_vpc" "example" {
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = "${merge(map("Name","log-example"), var.tags)}"
+  tags = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_internet_gateway" "example" {
   vpc_id = "${aws_vpc.example.id}"
-  tags   = "${merge(map("Name","log-example"), var.tags)}"
+  tags   = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_route_table" "example" {
@@ -23,7 +23,7 @@ resource "aws_route_table" "example" {
     gateway_id = "${aws_internet_gateway.example.id}"
   }
 
-  tags = "${merge(map("Name","log-example"), var.tags)}"
+  tags = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_route_table_association" "example" {
@@ -36,7 +36,7 @@ resource "aws_subnet" "example" {
   cidr_block              = "${var.example_subnet_cidr}"
   map_public_ip_on_launch = true
 
-  tags = "${merge(map("Name","log-example"), var.tags)}"
+  tags = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 # -----------------------------------------------------------
@@ -45,13 +45,13 @@ resource "aws_subnet" "example" {
 
 resource "aws_default_network_acl" "example_default" {
   default_network_acl_id = "${aws_vpc.example.default_network_acl_id}"
-  tags                   = "${merge(map("Name","log-example"), var.tags)}"
+  tags                   = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_network_acl" "example" {
   vpc_id     = "${aws_vpc.example.id}"
   subnet_ids = ["${aws_subnet.example.id}"]
-  tags       = "${merge(map("Name","log-example"), var.tags)}"
+  tags       = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_network_acl_rule" "example_ssh_in" {
@@ -106,7 +106,7 @@ resource "aws_network_acl_rule" "example_http_out" {
 
 resource "aws_default_security_group" "example_default" {
   vpc_id = "${aws_vpc.example.id}"
-  tags   = "${merge(map("Name","log-example"), var.tags)}"
+  tags   = "${merge(map("Name", "log-example"), var.tags)}"
 }
 
 resource "aws_security_group" "example_ssh_access" {
@@ -183,7 +183,7 @@ resource "aws_instance" "example" {
     volume_size = "${var.root_vol_size}"
   }
 
-  tags        = "${merge(map("Name","log-example"), var.tags)}"
+  tags        = "${merge(map("Name", "log-example"), var.tags)}"
   volume_tags = "${var.tags}"
 
   user_data = <<EOF

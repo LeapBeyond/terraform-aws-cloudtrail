@@ -67,7 +67,7 @@ A handful of examples of using the CloudTrail logs to drive CloudWatch alerts ca
 which are of particular security interest, and are shown in this example as using [SNS](https://aws.amazon.com/sns/) to send messages to [SQS](https://aws.amazon.com/sqs/) for some arbitrary downstream consumer. Please note that the security around SNS and SQS in this example is only sketched out, as it's not the focus of this example.
 
 ## License
-Copyright 2018 Leap Beyond Analytics
+Copyright 2018 Leap Beyond Emerging Technologies B.V.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

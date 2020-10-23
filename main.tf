@@ -11,7 +11,7 @@ resource "aws_kms_key" "log_key" {
   deletion_window_in_days = 7
   description             = "Log Bucket Encryption Key"
   enable_key_rotation     = true
-  tags                    = "${merge(map("Name","Log Bucket Key"), var.tags)}"
+  tags                    = "${merge(map("Name", "Log Bucket Key"), var.tags)}"
 }
 
 resource "aws_kms_alias" "log_key" {
@@ -23,7 +23,7 @@ resource "aws_kms_key" "cloudtrail_key" {
   deletion_window_in_days = 7
   description             = "CloudTrail Log Encryption Key"
   enable_key_rotation     = true
-  tags                    = "${merge(map("Name","CloudTrail Key"), var.tags)}"
+  tags                    = "${merge(map("Name", "CloudTrail Key"), var.tags)}"
 
   policy = <<POLICY
 {
@@ -172,7 +172,7 @@ resource "aws_s3_bucket" "log_bucket" {
     }
   }
 
-  tags = "${merge(map("Name","Log Bucket"), var.tags)}"
+  tags = "${merge(map("Name", "Log Bucket"), var.tags)}"
 }
 
 resource "aws_s3_bucket_policy" "log_bucket_policy" {
@@ -233,7 +233,7 @@ resource "aws_cloudwatch_log_group" "example" {
 
   kms_key_id        = "${aws_kms_key.cloudtrail_key.arn}"
   retention_in_days = 90
-  tags              = "${merge(map("Name","Example"), var.tags)}"
+  tags              = "${merge(map("Name", "Example"), var.tags)}"
 }
 
 # -----------------------------------------------------------
@@ -342,7 +342,7 @@ resource "aws_lambda_function" "example" {
     }
   }
 
-  tags = "${merge(map("Name","Example-FlowLogs-To-S3"), var.tags)}"
+  tags = "${merge(map("Name", "Example-FlowLogs-To-S3"), var.tags)}"
 }
 
 resource "aws_lambda_permission" "example" {
