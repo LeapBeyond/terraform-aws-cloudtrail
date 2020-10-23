@@ -58,7 +58,7 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 
   kms_key_id        = "${aws_kms_key.cloudtrail_key.arn}"
   retention_in_days = 30
-  tags              = "${merge(map("Name","Cloudtrail"), var.tags)}"
+  tags              = "${merge(map("Name", "Cloudtrail"), var.tags)}"
 }
 
 # -----------------------------------------------------------
@@ -82,7 +82,7 @@ resource "aws_cloudtrail" "example" {
     include_management_events = true
   }
 
-  tags = "${merge(map("Name","Example account audit"), var.tags)}"
+  tags = "${merge(map("Name", "Example account audit"), var.tags)}"
 }
 
 # -----------------------------------------------------------
@@ -346,7 +346,7 @@ resource "aws_sns_topic_subscription" "security_alerts_to_sqs" {
 
 resource "aws_sqs_queue" "security_alerts" {
   name = "security-alerts-${var.aws_region}"
-  tags = "${merge(map("Name","Security Alerts"), var.tags)}"
+  tags = "${merge(map("Name", "Security Alerts"), var.tags)}"
 }
 
 resource "aws_sqs_queue_policy" "sns_to_sqs" {
